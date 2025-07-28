@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>API Test Page</h1>
+    <button onclick="testAllAPIs()">Test All APIs</button>
+    <div id="results"></div>
+
+    <script>
+        async function testAllAPIs() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Testing APIs...</h2>';
+            
+            const apis = [
+                { name: 'Test API', url: '/api/test', method: 'GET' },
+                { name: 'Debug API', url: '/api/debug', method: 'GET' },
+                { name: 'Auth API (GET)', url: '/api/auth', method: 'GET' },
+                { name: 'Auth API (POST)', url: '/api/auth', method: 'POST', body: { displayName: 'Test User', aboutMe: 'Test user for API testing' } }
+            ];
+            
+            for (const api of apis) {
+                await testAPI(api, resultsDiv);
+            }
+        }
+        
+        async function testAPI(api, resultsDiv) {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = `<h3>${api.name}</h3><p>Testing...</p>`;
+            resultsDiv.appendChild(section);
+            
+            try {
+                console.log(`Testing ${api.name}...`);
+                
+                const options = {
+                    method: api.method,
+                    headers: { 'Content-Type': 'application/json' }
+                };
+                
+                if (api.body) {
+                    options.body = JSON.stringify(api.body);
+                }
+                
+                const response = await fetch(api.url, options);
+                console.log(`${api.name} response status:`, response.status);
+                
+                const responseText = await response.text();
+                console.log(`${api.name} response:`, responseText);
+                
+                let responseData;
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch (e) {
+                    responseData = { raw: responseText };
+                }
+                
+                if (response.ok) {
+                    section.className = 'test-section success';
+                    section.innerHTML = `
+                        <h3>✅ ${api.name} - Success (${response.status})</h3>
+                        <p><strong>URL:</strong> ${api.url}</p>
+                        <p><strong>Method:</strong> ${api.method}</p>
+                        <pre>${JSON.stringify(responseData, null, 2)}</pre>
+                    `;
+                } else {
+                    section.className = 'test-section error';
+                    section.innerHTML = `
+                        <h3>❌ ${api.name} - Error (${response.status})</h3>
+                        <p><strong>URL:</strong> ${api.url}</p>
+                        <p><strong>Method:</strong> ${api.method}</p>
+                        <pre>${responseText}</pre>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error(`${api.name} test failed:`, error);
+                section.className = 'test-section error';
+                section.innerHTML = `
+                    <h3>❌ ${api.name} - Network Error</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+        
+        // Auto-test on page load
+        window.onload = testAllAPIs;
+    </script>
+</body>
+</html> 
